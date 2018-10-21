@@ -106,7 +106,7 @@ except ImportError:
 # ==============================================================================
 
 
-START_POSITION = carla.Transform(carla.Location(x=180.0, y=199.0, z=40.0))
+START_POSITION = carla.Transform(carla.Location(x=180.0, y=199.0, z=4.0))
 
 
 def find_weather_presets():
@@ -118,6 +118,7 @@ def find_weather_presets():
 
 class World(object):
     def __init__(self, carla_world, hud):
+        self.world = carla_world
         self.hud = hud
         blueprint = random.choice(carla_world.get_blueprint_library().filter('vehicle'))
         self.vehicle = carla_world.spawn_actor(blueprint, START_POSITION)
@@ -170,7 +171,12 @@ class KeyboardControl(object):
                 elif event.key == K_h or (event.key == K_SLASH and pygame.key.get_mods() & KMOD_SHIFT):
                     world.hud.help.toggle()
                 elif event.key == K_TAB:
-                    world.camera_manager.toggle_camera()
+                    # world.camera_manager.toggle_camera()
+                    for a in world.world.get_actors():
+                        tags = a.semantic_tags
+                        print('%s: %s' % (a.type_id, tags))
+                        if isinstance(a, carla.TrafficLight):
+                            print('%s --> state = %s' % (a, a.state))
                 elif event.key == K_c and pygame.key.get_mods() & KMOD_SHIFT:
                     world.next_weather(reverse=True)
                 elif event.key == K_c:
@@ -324,8 +330,12 @@ class CollisionSensor(object):
         self = weak_self()
         if not self:
             return
-        actor_type = ' '.join(event.other_actor.type_id.title().split('.')[1:])
-        self._hud.notification('Collision with %s' % actor_type)
+        actor_type = ' '.join(event.other_actor.type_id.replace('_', '.').title().split('.')[1:])
+        self._hud.notification('Collision with %r' % actor_type)
+        a = event.other_actor
+        print('%s: %s' % (a.type_id, a.semantic_tags))
+        if isinstance(a, carla.TrafficLight):
+            print('%s --> state = %s' % (a, a.state))
 
 
 # ==============================================================================
